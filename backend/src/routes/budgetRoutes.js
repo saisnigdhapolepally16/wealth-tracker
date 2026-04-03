@@ -1,5 +1,6 @@
 import express from "express";
 import auth from "../middleware/authMiddleware.js";
+import { validate, budgetSchema } from "../validations/validator.js";
 import {
   createBudget,
   getBudgets,
@@ -10,7 +11,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", auth, createBudget);
+router.post("/", auth, validate(budgetSchema), createBudget);
 router.get("/", auth, getBudgets);
 router.get("/:month/:year", auth, getBudgetByMonth);
 router.put("/:id", auth, updateBudget);

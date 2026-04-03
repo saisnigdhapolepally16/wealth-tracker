@@ -1,20 +1,13 @@
 import Goal from "../models/Goals.js";
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
 // CREATE
 export const createGoal = async (req, res) => {
   try {
     const { title, targetAmount, deadline } = req.body;
 
-    if (!title || !targetAmount || !deadline) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (targetAmount <= 0) {
-      return res.status(400).json({ message: "Target amount must be positive" });
-    }
-
     if (new Date(deadline) <= new Date()) {
-      return res.status(400).json({ message: "Deadline must be in the future" });
+      return sendError(res, "Deadline must be in the future", 400);
     }
 
     const goal = await Goal.create({
@@ -24,9 +17,9 @@ export const createGoal = async (req, res) => {
       deadline,
     });
 
-    res.status(201).json(goal);
+    sendSuccess(res, goal, "Goal created successfully", 201);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to create goal", 500);
   }
 };
 
@@ -34,9 +27,9 @@ export const createGoal = async (req, res) => {
 export const getGoals = async (req, res) => {
   try {
     const goals = await Goal.find({ userId: req.user }).sort({ deadline: 1 });
-    res.json(goals);
+    sendSuccess(res, goals, "Goals retrieved successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to fetch goals", 500);
   }
 };
 
@@ -45,10 +38,6 @@ export const updateGoal = async (req, res) => {
   try {
     const { savedAmount } = req.body;
 
-    if (savedAmount && savedAmount < 0) {
-      return res.status(400).json({ message: "Saved amount cannot be negative" });
-    }
-
     const goal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.user },
       { savedAmount },
@@ -56,12 +45,12 @@ export const updateGoal = async (req, res) => {
     );
 
     if (!goal) {
-      return res.status(404).json({ message: "Goal not found" });
+      return sendError(res, "Goal not found", 404);
     }
 
-    res.json(goal);
+    sendSuccess(res, goal, "Goal updated successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to update goal", 500);
   }
 };
 
@@ -74,11 +63,11 @@ export const deleteGoal = async (req, res) => {
     });
 
     if (!goal) {
-      return res.status(404).json({ message: "Goal not found" });
+      return sendError(res, "Goal not found", 404);
     }
 
-    res.json({ message: "Goal deleted" });
+    sendSuccess(res, {}, "Goal deleted successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to delete goal", 500);
   }
 };

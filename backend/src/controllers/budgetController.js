@@ -1,17 +1,10 @@
 import Budget from "../models/Budget.js";
+import { sendSuccess, sendError } from "../utils/responseHandler.js";
 
 // CREATE
 export const createBudget = async (req, res) => {
   try {
     const { category, limit, month, year } = req.body;
-
-    if (!category || !limit || !month || !year) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (limit <= 0) {
-      return res.status(400).json({ message: "Limit must be positive" });
-    }
 
     const budget = await Budget.create({
       userId: req.user,
@@ -21,19 +14,22 @@ export const createBudget = async (req, res) => {
       year,
     });
 
-    res.status(201).json(budget);
+    sendSuccess(res, budget, "Budget created successfully", 201);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.code === 11000) {
+      return sendError(res, "Budget for this category in this month already exists", 400);
+    }
+    sendError(res, error.message || "Failed to create budget", 500);
   }
 };
 
 // GET ALL
 export const getBudgets = async (req, res) => {
   try {
-    const budgets = await Budget.find({ userId: req.user });
-    res.json(budgets);
+    const budgets = await Budget.find({ userId: req.user }).sort({ year: -1, month: -1 });
+    sendSuccess(res, budgets, "Budgets retrieved successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to fetch budgets", 500);
   }
 };
 
@@ -46,9 +42,9 @@ export const getBudgetByMonth = async (req, res) => {
       month: parseInt(month),
       year: parseInt(year),
     });
-    res.json(budgets);
+    sendSuccess(res, budgets, "Monthly budgets retrieved successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to fetch budgets", 500);
   }
 };
 
@@ -57,10 +53,6 @@ export const updateBudget = async (req, res) => {
   try {
     const { limit } = req.body;
 
-    if (limit && limit <= 0) {
-      return res.status(400).json({ message: "Limit must be positive" });
-    }
-
     const budget = await Budget.findOneAndUpdate(
       { _id: req.params.id, userId: req.user },
       { limit },
@@ -68,12 +60,12 @@ export const updateBudget = async (req, res) => {
     );
 
     if (!budget) {
-      return res.status(404).json({ message: "Budget not found" });
+      return sendError(res, "Budget not found", 404);
     }
 
-    res.json(budget);
+    sendSuccess(res, budget, "Budget updated successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to update budget", 500);
   }
 };
 
@@ -86,11 +78,11 @@ export const deleteBudget = async (req, res) => {
     });
 
     if (!budget) {
-      return res.status(404).json({ message: "Budget not found" });
+      return sendError(res, "Budget not found", 404);
     }
 
-    res.json({ message: "Budget deleted" });
+    sendSuccess(res, {}, "Budget deleted successfully");
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendError(res, error.message || "Failed to delete budget", 500);
   }
 };

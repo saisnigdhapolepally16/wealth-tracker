@@ -4,7 +4,10 @@ const authMiddleware = (req, res, next) => {
   const header = req.headers.authorization;
 
   if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "No token" });
+    return res.status(401).json({
+      success: false,
+      message: "No authorization token provided",
+    });
   }
 
   const token = header.split(" ")[1];
@@ -13,8 +16,17 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded.id;
     next();
-  } catch {
-    res.status(401).json({ message: "Invalid token" });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token has expired, please login again",
+      });
+    }
+    res.status(401).json({
+      success: false,
+      message: "Invalid or malformed token",
+    });
   }
 };
 

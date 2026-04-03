@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api";
+import { handleApiError } from "../utils/errorHandler";
 
 export default function TransactionList() {
   const [data, setData] = useState([]);
@@ -11,8 +12,8 @@ export default function TransactionList() {
       setLoading(true);
       const res = await API.get("/transactions");
       setData(res.data);
-    } catch {
-      setError("Failed to load transactions");
+    } catch (error) {
+      handleApiError(error, setError);
     } finally {
       setLoading(false);
     }
@@ -22,8 +23,8 @@ export default function TransactionList() {
     try {
       await API.delete(`/transactions/${id}`);
       fetchData();
-    } catch {
-      setError("Failed to delete transaction");
+    } catch (error) {
+      handleApiError(error, setError);
     }
   };
 
